@@ -3,6 +3,7 @@
 import logging
 import os
 import json
+import shutil
 
 from pprint import  pprint
 from datetime import datetime, timedelta
@@ -63,9 +64,14 @@ class ProcessedSchedule(object):
         self.raw = raw_schedule
         self.bus_no = self.raw.bus_no
 
-    @property
-    def schedule_path(self):
-        return os.path.join( BASE_DIR, 'Schedules', 'Processed', self.bus_no)
+    def schedule_path(self, city=None):
+        if city is not None:
+            spath = os.path.join(BASE_DIR, 'Schedules', 'Processed', self.bus_no, city)
+        else:
+            spath = os.path.join( BASE_DIR, 'Schedules', 'Processed', self.bus_no)
+            
+        if os.path.exists( spath ) is False : os.makedirs(spath)
+        return spath
     
     def generate_schedule(self):
         
@@ -83,8 +89,29 @@ class ProcessedSchedule(object):
             if rdt not in self.processed[city]: self.processed[city][rdt] = stime
             rdt = rdt + timedelta(minutes=1)
 
+    def write_schedule_file(self):
+    
+        return
+        writable_schedule = {}
+    
+        # convert keys to string
+        for city in self.processed:
+            if city not in writable_schedule: writable_schedule[city] = {}
+        
+            for dt, st in self.processed[city].items():
+                dt_hr_str = dt.strftime("%H")
+                dt_str = dt.strftime("%H:%M")
+                st_str = st.strftime("%I:%M")
+                ritable_schedule[city][dt.strftime("%H:%M")] = st.strftime("%I:%M")
+    
+        processed_json = json.dumps( writable_schedule )
+        with open( self.schedule_path() , 'w') as fh:
+            fh.write(processed_json)
 
     def write_schedule(self):
+        
+        # clear folder first
+        shutil.rmtree( self.schedule_path() )
         
         writable_schedule = {}
         
@@ -93,20 +120,18 @@ class ProcessedSchedule(object):
             if city not in writable_schedule : writable_schedule[city] = {}
 
             for dt, st in self.processed[city].items():
-                dt_str = dt.strftime("%H:%M")
-                st_str = st.strftime("%I:%M")
+                
+                if dt.strftime("%H") not in writable_schedule[city]:
+                    writable_schedule[city][ dt.strftime("%H") ] = []
 
-                with open( os.path.join(self.schedule_path, dt_str )  , 'w') as fh:
-                    line = {}
-                    line[dt_str] = st_str
-                    fh.writelines( json.dumps( line ) )
-                    print( "{} | {}  -- {} ".format(dt_str, st_str, line))
-                    del line
-                #writable_schedule[city][dt.strftime("%H:%M")] = st.strftime("%I:%M")
+                line = {}
+                line[ dt.strftime("%H:%M") ] = st.strftime("%I:%M")
+                writable_schedule[city][ dt.strftime("%H") ].append(line)
         
-        # processed_json = json.dumps( writable_schedule )
-        # with open( self.schedule_path , 'w') as fh:
-        #     fh.write(processed_json)
+        for city in writable_schedule:
+            for hr in writable_schedule[city]:
+                with open( os.path.join( self.schedule_path(city), hr ), 'w') as fh:
+                    fh.writelines( json.dumps( writable_schedule[city][hr] ) )
 
 
 if __name__ == '__main__':
