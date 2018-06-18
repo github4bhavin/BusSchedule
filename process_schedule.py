@@ -29,12 +29,11 @@ class RawSchedule(object):
 
         
     @property
-    def ny_schedule(self, category='weekday'):
+    def ny_schedule(self):
         """
-        :param category: ( weekday | weekend )
         :return:
         """
-        return self.raw_schedule['New York'][category]
+        return self.raw_schedule['New York']
 
     def get_raw_schedule(self):
         with open( self.schedule_path, 'r' ) as fh:
@@ -47,14 +46,14 @@ class RawSchedule(object):
         return datetime( year=tday.year, month=tday.month, day=tday.day, hour=h, minute=m)
         
     def convert_to_datetime(self):
+
         for city in self.raw_schedule:
-            if city not in self.schedule: self.schedule[city] = {}
-            
-            for category in self.raw_schedule[city]:
-                if category not in self.schedule[city]: self.schedule[city][category] = []
-                
-                for schedule_time in self.raw_schedule[city][category]:
-                    self.schedule[city][category].append( self.create_dt(schedule_time) )
+
+            if city not in self.schedule: self.schedule[city] = []
+
+            for schedule_time in self.raw_schedule[city]:
+                self.schedule[city].append( self.create_dt(schedule_time) )
+
 
 class ProcessedSchedule(object):
     
@@ -72,25 +71,18 @@ class ProcessedSchedule(object):
         
         for city in self.raw.schedule:
             if city not in self.processed : self.processed[city] = {}
-
-            for category in self.raw.schedule[city]:
-                if category not in self.processed[city] : self.processed[city][category] = {}
-                
-                for stime in self.raw.schedule[city][category]:
-                    
-                    self.get_missing_schedule(stime=stime, city=city, category=category)
+            for stime in self.raw.schedule[city]: self.get_missing_schedule(stime=stime, city=city)
                     
                     
-    def get_missing_schedule(self, stime, city, category):
+    def get_missing_schedule(self, stime, city):
         
         td = datetime.today()
         rdt = datetime( year=td.year, month=td.month, day=td.day, hour=00, minute=00 )
         
         while rdt <= stime:
-            if rdt not in self.processed[city][category]:
-                self.processed[city][category][rdt] = stime
-                
+            if rdt not in self.processed[city]: self.processed[city][rdt] = stime
             rdt = rdt + timedelta(minutes=1)
+
 
     def write_schedule(self):
         
@@ -100,13 +92,19 @@ class ProcessedSchedule(object):
         for city in self.processed:
             if city not in writable_schedule : writable_schedule[city] = {}
 
-            for cat in self.processed[city]:
-                if cat not in writable_schedule: writable_schedule[city][cat] = {}
-
-                for dt, st in self.processed[city][cat].items():
-                    #print( dt.strftime("%H:%M"), st.strftime("%I:%M"))
-                    writable_schedule[city][cat][dt.strftime("%H:%M")] = st.strftime("%I:%M")
+            for dt, st in self.processed[city].items():
+                writable_schedule[city][dt.strftime("%H:%M")] = st.strftime("%I:%M")
         
         processed_json = json.dumps( writable_schedule )
         with open( self.schedule_path , 'w') as fh:
             fh.write(processed_json)
+
+
+if __name__ == '__main__':
+    
+    BUS_NO = '321'
+
+    raw = RawSchedule(BUS_NO)
+    processed = ProcessedSchedule(raw)
+    processed.generate_schedule()
+    processed.write_schedule()
