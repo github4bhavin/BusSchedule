@@ -93,11 +93,20 @@ class ProcessedSchedule(object):
             if city not in writable_schedule : writable_schedule[city] = {}
 
             for dt, st in self.processed[city].items():
-                writable_schedule[city][dt.strftime("%H:%M")] = st.strftime("%I:%M")
+                dt_str = dt.strftime("%H:%M")
+                st_str = st.strftime("%I:%M")
+
+                with open( os.path.join(self.schedule_path, dt_str )  , 'w') as fh:
+                    line = {}
+                    line[dt_str] = st_str
+                    fh.writelines( json.dumps( line ) )
+                    print( "{} | {}  -- {} ".format(dt_str, st_str, line))
+                    del line
+                #writable_schedule[city][dt.strftime("%H:%M")] = st.strftime("%I:%M")
         
-        processed_json = json.dumps( writable_schedule )
-        with open( self.schedule_path , 'w') as fh:
-            fh.write(processed_json)
+        # processed_json = json.dumps( writable_schedule )
+        # with open( self.schedule_path , 'w') as fh:
+        #     fh.write(processed_json)
 
 
 if __name__ == '__main__':
