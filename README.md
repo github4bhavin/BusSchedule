@@ -1,5 +1,7 @@
 ## BusSchedule Workflow
 
+Now you can get the next bus schedule along with the estimated time of arrival right from the new Apple 
+Workflow app
 
 ### Support or Contact
 
