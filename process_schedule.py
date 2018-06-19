@@ -122,11 +122,9 @@ class ProcessedSchedule(object):
             for dt, st in self.processed[city].items():
                 
                 if dt.strftime("%H") not in writable_schedule[city]:
-                    writable_schedule[city][ dt.strftime("%H") ] = []
+                    writable_schedule[city][ dt.strftime("%H") ] = {}
 
-                line = {}
-                line[ dt.strftime("%H:%M") ] = st.strftime("%I:%M")
-                writable_schedule[city][ dt.strftime("%H") ].append(line)
+                writable_schedule[city][dt.strftime("%H")][ dt.strftime("%H:%M") ] = st.strftime("%I:%M")
         
         for city in writable_schedule:
             for hr in writable_schedule[city]:
